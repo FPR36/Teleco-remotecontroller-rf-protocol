@@ -1,0 +1,93 @@
+# Wemos D1 mini (ESP8266) + RFM95B als FSK-zender voor pergola-lamellen
+# Zet sx1276_fsk.h in dezelfde map als deze yaml.
+
+esphome:
+  name: pergola
+  friendly_name: pergola
+  includes:
+    - sx1276_fsk.h
+  on_boot:
+    priority: 200          # na hardware-init, voor WiFi
+    then:
+      - lambda: |-
+          if (!sx::init()) {
+            ESP_LOGE("pergola", "RFM95B niet gevonden, controleer bedrading (SPI/NSS/RESET)");
+          }
+
+esp8266:
+  board: d1_mini
+
+logger:
+
+api:
+  encryption:
+    key: ""
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: pergola Fallback Hotspot
+    password: "DcT07TxuZScf"
+
+captive_portal:
+
+# De pinnen D1, D2, D4, D6, D7 en D8 worden in sx1276_fsk.h aangestuurd.
+# Daarom hier geen output:-blokken op die pinnen (ESPHome zou ze anders ook claimen).
+
+mqtt:
+  broker: 192.168.1.22
+  # Alleen de native API (HA ESPHome-integratie) gebruiken voor de entiteiten,
+  # anders krijg je ze dubbel. Zet op true als je ze via MQTT-discovery wilt.
+  discovery: false
+  on_message:
+    - topic: slats36240          # zelfde topic als in je B4R-project
+      then:
+        - lambda: |-
+            sx::send_name(x);
+    - topic: ping36240
+      then:
+        - mqtt.publish:
+            topic: alive36240
+            payload: "0"
+
+# ---- Bediening in Home Assistant ----
+# Er is geen terugmelding van de ontvanger, dus de select is "optimistic":
+# hij toont de laatst verzonden stand, niet de werkelijke stand.
+select:
+  - platform: template
+    name: "Lamellen stand"
+    id: slats_pos
+    optimistic: true
+    options:
+      - Closed
+      - Quarter
+      - Midposition
+      - FullOpen
+    initial_option: Closed
+    restore_value: false
+    set_action:
+      - lambda: |-
+          sx::send_name(x);
+
+button:
+  - platform: template
+    name: "Lamellen links"
+    on_press:
+      - lambda: sx::send(8);
+  - platform: template
+    name: "Lamellen rechts"
+    on_press:
+      - lambda: sx::send(5);
+  - platform: template
+    name: "Lamellen stop"
+    on_press:
+      - lambda: sx::send(7);
+  - platform: template
+    name: "RF testtoon"
+    entity_category: diagnostic
+    on_press:
+      - lambda: sx::carrier_test();
