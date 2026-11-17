@@ -1,3 +1,12 @@
+Update 17/11/2026
+HA integration. Attached the yaml file needed for ESPHOME to setup a board (wemosd1 mini)  with RFM95b transmitter.
+After installtion in HA buttons will appear for controlling the slats.
+Sorry that the comments are writting in my native language.
+Slats.yaml and sx 1286 (for esphome)
+Modification is also possible to other RF chips.
+The codes used in the file to control the Slats need to be updated to your system, see explaination below and also the discussion on Issues topic
+
+
 # Teleco-remotecontroller-rf-protocol for adjustable slats unit TVPLD868C150TT integration with android app via a second remote unit
 ![afbeelding](https://github.com/user-attachments/assets/73f1b692-a53e-4310-b1d7-6d52b4c2b608)
 
